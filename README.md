@@ -1,5 +1,12 @@
 # OLED 128×64 Menu Emulator
 
+**Домашнее задание №2: агентно-ориентированный пайплайн разработки.**
+Результаты для проверки: [отчёт модуля 2](docs/module-2.md),
+[управление контекстом и скриншоты](docs/context-usage.md),
+[таблица выполнения задания](#модуль-2-агентно-ориентированный-пайплайн-разработки).
+Репозиторий ДЗ №2: [oled-menu-emu-hw2](https://github.com/dmitrychechet02-cell/oled-menu-emu-hw2).
+Работа продолжает эмулятор из [ДЗ №1](https://github.com/dmitrychechet02-cell/oled-menu-emu).
+
 Эмулятор меню для монохромного OLED-дисплея 2.42" 128×64 на контроллере **SSD1309**.
 Ядро на C (графика, шрифт 5×7 с кириллицей, движок меню, экраны) компилируется в
 WebAssembly и работает в браузере, а тот же код без изменений собирается под микроконтроллер.
@@ -182,3 +189,58 @@ npx playwright show-report      # отчёт со скриншотами и тр
 ```
 
 Подробный отчёт по домашнему заданию — [`docs/about.md`](docs/about.md).
+
+## Модуль 2. Агентно-ориентированный пайплайн разработки
+
+Подготовлено 2026-10-22 для существующего OLED-эмулятора. GSD Core **1.18.0** уже
+установлен в пользовательском окружении Codex; повторная установка не требовалась.
+Discovery выполнен вручную по структуре GSD: пользователь выбрал график температуры
+и подтвердил требования. Полный автоматический `$gsd-new-project` не запускался.
+
+| Пункт задания | Результат и доказательство |
+| --- | --- |
+| GSD и структура проекта | [PROJECT](.planning/PROJECT.md), [требования](.planning/REQUIREMENTS.md), [Roadmap](.planning/ROADMAP.md), [progress / STATE](.planning/STATE.md), [планы](.planning/phases/01-agent-pipeline/01-01-PLAN.md) |
+| Architecture и security checklist | [Архитектура](docs/architecture.md), [контроль безопасности](docs/security-checklist.md) |
+| Память агента, аналог Claude Mem | STATE + [журнал решений](docs/memory.md) + [чекпойнт](docs/context-checkpoint.md); без внешнего сервиса |
+| Быстрые команды и auto hooks | Команды ниже; SessionStart, PreToolUse, PostToolUse и новый PreCompact в Claude Code; [тесты](tests/hooks/agent-workflow.test.mjs) |
+| Управление контекстом | Graft, ограниченное восстановление памяти, checkpoint; [демонстрация compact в Codex CLI](docs/context-usage.md): **35.1K → 16.5K токенов (≈53% меньше)**, снимки до/после и проверка сохранения требований |
+| Discovery | [Ответы пользователя, решения и критерии](.planning/phases/02-temperature-graph/02-CONTEXT.md), [план первой продуктовой фазы](.planning/phases/02-temperature-graph/02-01-PLAN.md) |
+
+### Воспроизведение
+
+```bash
+npm run agent:doctor       # Node, установка GSD, обязательные документы
+npm run gsd:check          # проверка структуры .planning средствами GSD Core
+npm run gsd:progress       # фактические планы и SUMMARY по фазам
+npm run agent:resume       # компактный пакет для новой сессии
+npm run agent:checkpoint   # сохранить docs/context-checkpoint.md
+npm run test:hooks         # проверки памяти, защиты и автолинтера
+```
+
+GSD не является npm-зависимостью приложения и не включается в lock-файл. Команды
+ищут `gsd-core/bin/gsd-tools.cjs` в `CODEX_HOME`, затем в `~/.codex` и `~/.claude`.
+На другом компьютере нужен установленный GSD Core; отсутствие установки сообщает doctor.
+Версия текущей установки и результаты проверок приведены в [отчёте модуля](docs/module-2.md).
+
+В Codex доступны навыки `$gsd-progress`, `$gsd-plan-phase`, `$gsd-execute-phase`,
+`$gsd-pause-work` и `$gsd-resume-work`. Созданные здесь документы — адаптация для
+существующего проекта; наличие навыка не означает, что его workflow уже выполнен.
+
+Цикл: **Discovery → требования → план → реализация → lint/unit/e2e → проверка
+человеком → SUMMARY и память → checkpoint**. Хуки Claude Code загружаются в
+доверенном проекте; перед демонстрацией проверить `/hooks`. В Codex переносимая
+память доступна через npm-команды; новый PreCompact подключён только в Claude Code.
+
+Для графика согласованы 64 замера с частотой 1 Гц, RAM, автоподбор Y, текущее
+значение, RU/EN и BACK. Его реализация ещё не начата. Пользовательская проверка
+управления контекстом завершена: [результаты](.planning/phases/01-agent-pipeline/01-02-SUMMARY.md).
+
+Снимки сделаны в одной сессии Codex CLI v0.163.0-alpha.11.1, GPT-6.1-Sol high:
+`/status` → `/compact` → `/status`. Сравнивается строка `Context window`,
+а не квота аккаунта. После compact агент повторил требования без чтения файлов.
+
+![Контекст до сжатия: 35.1K used](docs/screenshots/context-usage-before.png)
+
+![Контекст после сжатия: 16.5K used](docs/screenshots/context-usage-after.png)
+
+[Проверка сохранения требований после сжатия](docs/screenshots/context-retained.png).

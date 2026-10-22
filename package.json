@@ -18,7 +18,13 @@
     "lint:js": "eslint . && prettier --check web tests/e2e scripts",
     "format": "make format && prettier --write web tests/e2e scripts",
     "sync:agents": "node scripts/sync-agents.mjs",
-    "check:agents": "node scripts/sync-agents.mjs --check"
+    "check:agents": "node scripts/sync-agents.mjs --check",
+    "agent:doctor": "node scripts/agent-workflow.mjs doctor",
+    "agent:resume": "node scripts/agent-workflow.mjs resume",
+    "agent:checkpoint": "node scripts/agent-workflow.mjs checkpoint",
+    "test:hooks": "node --test tests/hooks/*.test.mjs",
+    "gsd:progress": "node scripts/agent-workflow.mjs gsd progress table",
+    "gsd:check": "node scripts/agent-workflow.mjs gsd validate health"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

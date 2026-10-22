@@ -40,7 +40,7 @@ pairs.push([
 
 let stale = 0;
 for (const [src, dst, transform] of pairs) {
-  const want = transform(readFileSync(src, "utf8"));
+  const want = transform(readFileSync(src, "utf8").replace(/\r\n/g, "\n"));
   const have = existsSync(dst) ? readFileSync(dst, "utf8") : null;
   if (have === want) continue;
   stale++;

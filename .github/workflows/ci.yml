@@ -28,6 +28,9 @@ jobs:
       - name: Линтеры
         run: npm run lint
 
+      - name: Тесты hooks и памяти
+        run: npm run test:hooks
+
       - name: Unit-тесты
         run: make test
 
